@@ -1,49 +1,71 @@
-# Dokumentace – HotelBook
+# HotelBook – dokumentace
 
-HotelBook je jednoduchá **frontendová PWA** pro vyhledávání hotelů a rezervaci pokojů.
-Běží celá v prohlížeči – nemá žádný backend ani databázi. Hotely hledá přímo přes
-**Google Places API** a vše ostatní (rezervace, obsazenost) si pamatuje v prohlížeči
-v `localStorage`.
+## Účel aplikace
 
----
+HotelBook je webová aplikace, ve které si uživatel najde hotel a zarezervuje pokoj.
+Celá běží v prohlížeči, nemá žádný server ani databázi. Hotely se hledají přes Google
+Places API a vytvořené rezervace se ukládají do `localStorage`. Aplikace je zároveň PWA,
+takže jde nainstalovat a po prvním načtení funguje i bez internetu.
 
-## 1. Jak appku spustit
+## Struktura projektu
 
-Protože je to PWA, **service worker funguje jen přes `http(s)`**, ne přes otevření
-souboru `file://`. Spusť si proto jednoduchý lokální server:
+Soubory v repozitáři:
+
+- `index.html` – vyhledávání hotelů
+- `hotel.html` – detail hotelu a rezervace pokoje
+- `reservations.html` – moje rezervace
+- `script.js` – logika celé aplikace, sdílí ji všechny tři stránky
+- `css/style.css` – styly
+- `manifest.json` – nastavení PWA (název, ikony, barvy)
+- `service-worker.js` – cache a offline režim
+- `icons/` – ikony aplikace (192 a 512 px)
+- `ZADANI.md` – zadání projektu
+- `DOKUMENTACE.md` – tento soubor
+
+## Použité API endpointy
+
+Aplikace volá Google Places API (New) přímo z prohlížeče.
+
+**`POST https://places.googleapis.com/v1/places:searchText`**
+Najde hotely podle zadaného města. V hlavičkách se posílá `X-Goog-Api-Key` (API klíč)
+a `X-Goog-FieldMask`, kterým aplikace říká, jaká pole chce vrátit (název, adresa,
+hodnocení, web, telefon, souřadnice, fotka).
+
+**`GET https://places.googleapis.com/v1/{nazev_fotky}/media?maxWidthPx=400&key=API_KEY`**
+Stáhne náhledovou fotku hotelu.
+
+Kromě toho aplikace skládá odkazy na Google Maps. To už ale nejsou volání API, jen
+běžné odkazy:
+`https://www.google.com/maps/search/?api=1&query=...` (hotel na mapě) a
+`https://www.google.com/maps/dir/?api=1&travelmode=driving&...` (trasa přes více hotelů).
+
+## Use-case diagram
 
 ```
-python3 -m http.server 8080
+     
+      Uživatel (host)   
+      |
+      v
+  +---------------------------------------
+  |  HotelBook
+  |
+  |    ( Vyhledat hotely podle města )
+  |    ( Zobrazit detail hotelu )
+  |    ( Zkontrolovat dostupnost pokojů )
+  |    ( Rezervovat pokoj )
+  |    ( Zobrazit moje rezervace )
+  |    ( Zrušit rezervaci )
+  |    ( Otevřít mapu / trasu hotelu )
+  +---------------------------------------
 ```
 
-a otevři `http://localhost:8080/index.html`.
+## Jak jednotlivé části fungují
 
-> Když po úpravách vidíš starou verzi, smaž starý service worker:
-> DevTools (F12) → **Application** → **Service Workers** → **Unregister**, pak tvrdý reload (Cmd/Ctrl+Shift+R).
-
----
-
-## 2. Struktura souborů
-
-| Soubor | K čemu slouží |
-|---|---|
-| `index.html` | stránka vyhledávání hotelů |
-| `hotel.html` | detail hotelu + rezervace pokoje |
-| `reservations.html` | moje rezervace |
-| `script.js` | veškerá logika aplikace (sdílená všemi stránkami) |
-| `css/style.css` | vzhled |
-| `manifest.json` | popis PWA (jméno, ikony, barvy) |
-| `service-worker.js` | offline režim a cache |
-| `icons/` | ikony aplikace (192 a 512 px) |
-
----
-
-## 3. Jak to funguje
-
-### Architektura
-Aplikace má tři HTML stránky, ale **jediný** `script.js`, který je do všech vložený.
-Na konci souboru je „rozcestník", který podle přítomnosti unikátního prvku pozná,
-na které stránce právě jsme, a spustí jen tu správnou inicializaci:
+### Rozdělení na stránky
+Aplikace má tři HTML stránky, ale jen jeden `script.js`. Aby se na každé stránce spustil
+jen ten správný kód, je na konci souboru jednoduchý přepínač. Ten se podívá, jestli na
+stránce existuje určitý prvek (např. vyhledávací formulář), a podle toho zavolá patřičnou
+inicializační funkci:
 
 ```js
 document.addEventListener('DOMContentLoaded', function() {
@@ -53,81 +75,62 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 ```
 
-### Vyhledávání hotelů (Google Places API)
-Funkce `searchHotels()` volá Google Places API **přímo z prohlížeče** (podporuje CORS,
-takže není potřeba žádný server-prostředník). Posílá `POST` na
-`places.googleapis.com/v1/places:searchText`, kde:
+### Vyhledávání hotelů
+Funkce `searchHotels()` pošle požadavek na endpoint `places:searchText` se jménem města.
+Odpověď z Googlu má jiný tvar, než aplikace používá, takže ji `normalizeHotel()` přepíše
+do vlastního formátu (`place_id`, `name`, `formatted_address`, `website`, `rating`,
+`image`, souřadnice). Hotely se zároveň uloží do cache v `localStorage`, aby šel později
+otevřít jejich detail i bez nového dotazu.
 
-- hlavička `X-Goog-Api-Key` nese API klíč,
-- hlavička `X-Goog-FieldMask` určuje, **která pole** se mají vrátit (jméno, adresa,
-  hodnocení, web, telefon, souřadnice, fotky) – tím se šetří data,
-- tělo obsahuje hledané město, jazyk a typ `lodging` (ubytování).
+### Ukládání do localStorage
+`localStorage` umí ukládat jen text, proto data procházejí přes funkce `read()` a
+`write()`, které je převádějí na JSON a zpět. Aplikace používá tyto klíče:
 
-Odpověď z Googlu má jiný tvar, než aplikace potřebuje, proto ji `normalizeHotel()`
-převede do jednotného formátu (`place_id`, `name`, `formatted_address`, `website`,
-`rating`, `image`, souřadnice…).
+- `hotelbook_reservations` – seznam rezervací
+- `hotelbook_occupancy` – obsazenost pokojů, klíč má tvar `roomId|datum` a hodnotou je id rezervace
+- `hotelbook_hotels_cache` – stažené hotely
+- `hotelbook_searches` – posledních pět hledaných měst
+- `hotelbook_last_guest` – naposledy zadané jméno
 
-### Kam a co se ukládá (`localStorage`)
-`localStorage` je úložiště v prohlížeči typu „klíč → text". Aplikace používá pomocné
-funkce `read()` a `write()`, které data převádějí na JSON a zpět.
+Obsazenost se ukládá zvlášť pro každou noc pobytu. Díky tomu je kontrola volnosti
+pokoje snadná, protože se jen pro každou noc ověří, jestli už není zabraná. Nemusí se
+počítat překrývání termínů.
 
-| Klíč | Co obsahuje |
-|---|---|
-| `hotelbook_reservations` | seznam všech rezervací |
-| `hotelbook_occupancy` | obsazenost pokojů; klíč `"roomId\|datum"` → id rezervace |
-| `hotelbook_hotels_cache` | stažené hotely (aby fungoval detail i offline) |
-| `hotelbook_searches` | posledních 5 hledaných měst |
-| `hotelbook_last_guest` | naposledy zadané jméno (předvyplnění) |
-
-Klíčový nápad je **obsazenost po jednotlivých nocích**: každá obsazená noc má vlastní
-záznam. Díky tomu je kontrola volnosti pokoje jednoduchá – stačí se zeptat na každou
-noc pobytu zvlášť, není potřeba počítat překrývání intervalů.
-
-### Pokoje
-Google nevrací seznam pokojů, takže si je aplikace **vygeneruje sama** – ale
-**deterministicky** z funkce `hash(place_id)`. To znamená, že stejný hotel má pokaždé
-stejné pokoje, čísla i ceny. Kdyby se losovaly náhodně, neseděly by uložené rezervace.
+### Generování pokojů
+Google seznam pokojů nevrací, takže si je aplikace dopočítá sama funkcí `roomsFor()`.
+Počet pokojů, patra i ceny vycházejí z `hash(place_id)`, což je číslo, které je pro
+stejný hotel vždycky stejné. Stejný hotel tak má pořád stejné pokoje. Kdyby se losovaly
+náhodně, po znovunačtení stránky by se rozpadly už uložené rezervace.
 
 ### Rezervace a obsazenost
-- `saveReservation()` – vytvoří rezervaci s unikátním id a označí každou noc pobytu
-  jako obsazenou.
-- `isRoomFree()` – ověří, že žádná noc pobytu není obsazená.
-- `cancelReservation()` – nastaví stav „zrušeno" a uvolní jen noci patřící dané rezervaci.
-- `renderReservations()` – najde rezervace podle **přesné shody jména** a vykreslí je.
+- `saveReservation()` vytvoří rezervaci, dá jí vlastní id a každou noc pobytu označí jako obsazenou.
+- `isRoomFree()` zkontroluje, že žádná noc pobytu není zabraná.
+- `cancelReservation()` rezervaci označí jako zrušenou a uvolní jen ty noci, které k ní patří.
+- `renderReservations()` najde rezervace podle přesné shody jména a vypíše je.
 
-### PWA (instalace a offline)
-PWA stojí na dvou věcech:
+### PWA a service worker
+O PWA se starají dva soubory. `manifest.json` popisuje aplikaci pro instalaci (název,
+ikony, barvy, režim `standalone`). `service-worker.js` běží na pozadí a má tři části:
 
-- **`manifest.json`** – popisuje aplikaci pro instalaci (jméno, ikony, barvy,
-  `display: standalone`, relativní `start_url`/`scope`).
-- **`service-worker.js`** – běží na pozadí a má tři fáze:
-  - `install` – uloží do cache soubory aplikace (každý zvlášť, aby jeden chybějící
-    neshodil celou instalaci),
-  - `activate` – smaže staré verze cache a převezme řízení (`clients.claim()`),
-  - `fetch` – **network-first**: zkusí síť, a když selže (offline), vrátí soubor z cache.
-
-Network-first znamená, že uživatel vždy vidí čerstvou verzi, a cache slouží hlavně
-jako záchrana pro offline.
-
-### Mapy
-Funkce `mapUrl()` a `routeUrl()` jen sestaví odkaz na Google Maps z adresy nebo
-souřadnic. Nejde o žádné placené volání API, jen o proklik.
+- `install` uloží soubory aplikace do cache (každý zvlášť, aby jeden chybějící soubor neshodil celou instalaci),
+- `activate` smaže staré verze cache a převezme řízení nad otevřenými stránkami,
+- `fetch` používá strategii network-first: nejdřív zkusí síť a teprve když není dostupná, vezme soubor z cache.
 
 ### Datumy
-- `isoDate()` – formát `YYYY-MM-DD` v UTC, používá se pro klíče obsazenosti.
-- `isoDateLocal()` – formát `YYYY-MM-DD` v místním čase, pro předvyplnění polí.
-- `nights()` – počet nocí mezi dvěma daty, `czDate()` – český formát data.
+`isoDate()` vrací datum ve formátu `YYYY-MM-DD` v UTC a používá se pro klíče obsazenosti.
+`isoDateLocal()` dělá to samé v místním čase a slouží k předvyplnění datových polí, aby
+datum nehrálo o den. `nights()` spočítá počet nocí a `czDate()` převede datum do českého
+zápisu.
 
-### Bezpečnost (XSS)
-Cokoli, co pochází z API, od uživatele nebo z `localStorage`, se před vložením do
-`innerHTML` prožene funkcí `escapeHtml()`, která nahradí nebezpečné HTML znaky
-entitami. Odkaz na web hotelu se navíc vloží jen tehdy, když začíná na `http(s)://`.
+### Ochrana proti XSS
+Texty, které přicházejí z API, od uživatele nebo z `localStorage`, se před vložením do
+stránky přes `innerHTML` proženou funkcí `escapeHtml()`. Ta nahradí nebezpečné HTML znaky
+za entity. Odkaz na web hotelu se navíc vloží jen tehdy, když začíná na `http://` nebo
+`https://`.
 
----
+## Poznámky
 
-## 4. Poznámky
-
-- **API klíč** je v `script.js` (konstanta `GOOGLE_PLACES_KEY`). Protože je aplikace
-  čistě frontendová, klíč je v prohlížeči vidět – je potřeba ho omezit v Google Cloud
-  Console (povolené API + HTTP referrer).
-- Aplikace **nepotřebuje build ani instalaci závislostí** – jsou to jen statické soubory.
+API klíč je uložený v `script.js` v konstantě `GOOGLE_PLACES_KEY`. Protože je aplikace
+čistě frontendová, klíč je v prohlížeči vidět, takže by měl být v Google Cloud Console
+omezený (povolená API a HTTP referrer). Aplikace nepotřebuje žádný build ani instalaci
+knihoven, jsou to jen statické soubory.
