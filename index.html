@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="HotelBook – vyhledávejte hotely a rezervujte pokoje online">
+  <meta name="theme-color" content="#0f172a">
+  <title>HotelBook – Vyhledávání hotelů</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon-192.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="offline-banner" id="offline-banner">
+    Jste offline. Zobrazujeme uložená data.
+  </div>
+  <nav class="nav">
+    <span class="nav-logo">Hotel<span>Book</span></span>
+    <ul class="nav-links">
+      <li><a href="index.html" class="active">Hledat hotely</a></li>
+      <li><a href="reservations.html">Moje rezervace</a></li>
+    </ul>
+  </nav>
+  <section class="hero">
+    <h1 class="hero-title">Najděte svůj <span class="accent">ideální hotel</span></h1>
+    <p class="hero-subtitle">Zadejte město a vyberte hotel.</p>
+    <form class="search-form" id="search-form" autocomplete="off">
+      <input
+        type="text"
+        class="form-input"
+        id="search-input"
+        placeholder="Zadejte město (např. Praha, Brno, Vídeň)..."
+        aria-label="Zadejte město"
+      >
+      <input type="date" class="form-input date-input" id="checkin-input" aria-label="Datum příjezdu">
+      <input type="date" class="form-input date-input" id="checkout-input" aria-label="Datum odjezdu">
+      <button type="button" class="btn btn-primary" id="search-button">Hledat</button>
+    </form>
+    <div class="recent-searches" id="recent-searches" style="display:none"></div>
+  </section>
+  <div class="spinner-wrap" id="spinner" style="display:none">
+    <div class="spinner"></div>
+  </div>
+  <div class="page-content" id="search-error" style="display:none">
+    <div class="alert alert-error visible">
+      <span class="error-msg"></span>
+    </div>
+  </div>
+  <div class="page-content" id="no-results" style="display:none">
+    <div class="empty-state">
+      <h3>Žádné hotely nenalezeny</h3>
+      <p>Pro <span class="no-results-query"></span> nebyly nalezeny žádné hotely. Zkuste jiné město.</p>
+    </div>
+  </div>
+  <div class="map-info-bar" id="results-section" style="display:none">
+    <div>
+      <strong>Hotely v: <span id="results-query"></span></strong>
+      <span class="text-muted" id="results-count"></span>
+    </div>
+    <div class="maps-actions">
+      <a class="btn btn-outline btn-sm" id="maps-route-link" target="_blank" rel="noopener">Trasa</a>
+    </div>
+  </div>
+  <main class="page-content" id="results-list" style="display:none">
+    <div class="hotels-grid" id="hotel-results"></div>
+  </main>
+  <script src="script.js"></script>
+</body>
+</html>

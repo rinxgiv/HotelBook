@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1a1a2e">
+  <title>Detail hotelu – HotelBook</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon-192.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="offline-banner" id="offline-banner">
+    Jste offline. Zobrazujeme uložená data.
+  </div>
+  <nav class="nav">
+    <a href="index.html" class="nav-logo">Hotel<span>Book</span></a>
+    <ul class="nav-links">
+      <li><a href="index.html">Hledat hotely</a></li>
+      <li><a href="reservations.html">Moje rezervace</a></li>
+    </ul>
+  </nav>
+  <div class="spinner-wrap" id="detail-spinner">
+    <div class="spinner"></div>
+  </div>
+  <div id="detail-content" style="display:none">
+    <div class="hotel-detail-header">
+      <div class="container">
+        <div class="breadcrumb">
+          <a href="index.html">← Zpět na výsledky</a>
+          &nbsp;/&nbsp;
+          <span id="hotel-breadcrumb-name">Hotel</span>
+        </div>
+        <h1 class="hotel-name" id="hotel-name-title">Načítám...</h1>
+        <div class="hotel-meta-row">
+          <span id="hotel-address-header"></span>
+        </div>
+      </div>
+    </div>
+    <div class="page-content">
+      <div class="success-banner" id="success-banner"></div>
+      <div class="info-card" style="margin-bottom:20px">
+        <div class="info-card-title">Informace o hotelu</div>
+        <div class="info-row"><strong>Adresa</strong> <span id="info-address">—</span></div>
+        <div class="info-row"><strong>Telefon</strong> <span id="info-phone">—</span></div>
+        <div class="info-row"><strong>Web</strong> <span id="info-website">—</span></div>
+        <div class="info-row"><strong>Mapy</strong> <span id="info-maps">—</span></div>
+      </div>
+      <div class="info-card" style="margin-bottom:20px">
+        <div class="info-card-title">Zkontrolovat dostupnost</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+          <div class="form-group" style="margin:0;flex:1;min-width:140px">
+            <label class="form-label" for="room-checkin">Příjezd</label>
+            <input type="date" class="form-input" id="room-checkin">
+          </div>
+          <div class="form-group" style="margin:0;flex:1;min-width:140px">
+            <label class="form-label" for="room-checkout">Odjezd</label>
+            <input type="date" class="form-input" id="room-checkout">
+          </div>
+        </div>
+      </div>
+      <div>
+        <h2 class="section-title">Dostupné pokoje</h2>
+        <div id="rooms-list"></div>
+      </div>
+      <a href="reservations.html" class="btn btn-outline" style="display:inline-flex;margin-top:20px">
+        Moje rezervace
+      </a>
+    </div>
+  </div>
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="modal-header">
+        <span class="modal-title" id="modal-title">Rezervace pokoje</span>
+        <button class="modal-close" id="modal-close" aria-label="Zavřít">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div style="background:var(--soft);border-radius:var(--r);padding:14px 16px;margin-bottom:20px;font-size:0.9rem">
+          <div style="font-weight:700;font-size:1rem;margin-bottom:8px" id="modal-room-type"></div>
+          <div style="color:var(--muted);margin-bottom:4px" id="modal-room-number"></div>
+          <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:8px">
+            <span><span id="modal-checkin"></span> – <span id="modal-checkout"></span></span>
+            <span><span id="modal-nights"></span></span>
+            <span class="price"><span id="modal-price"></span></span>
+          </div>
+        </div>
+        <form id="booking-form" novalidate>
+          <div class="form-group">
+            <label class="form-label" for="modal-guest-name">Vaše jméno *</label>
+            <input
+              type="text"
+              class="form-input"
+              id="modal-guest-name"
+              placeholder="Jan Novák"
+              required
+              autocomplete="name"
+            >
+          </div>
+          <div class="alert alert-error" id="modal-error"></div>
+          <button type="submit" class="btn btn-primary" style="width:100%;margin-top:4px">
+            Potvrdit rezervaci
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>

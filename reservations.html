@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1a1a2e">
+  <title>Moje rezervace – HotelBook</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon-192.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="offline-banner" id="offline-banner">
+    Jste offline. Rezervace jsou načteny z lokálního úložiště.
+  </div>
+  <nav class="nav">
+    <a href="index.html" class="nav-logo">Hotel<span>Book</span></a>
+    <ul class="nav-links">
+      <li><a href="index.html">Hledat hotely</a></li>
+      <li><a href="reservations.html" class="active">Moje rezervace</a></li>
+    </ul>
+  </nav>
+  <div class="reservations-header">
+    <div class="container">
+      <h1>Moje rezervace</h1>
+      <p>Zadejte své jméno pro zobrazení všech vašich rezervací.</p>
+    </div>
+  </div>
+  <div class="page-content">
+    <form class="name-search-form" id="name-search-form" autocomplete="off">
+      <input
+        type="text"
+        class="form-input"
+        id="guest-name-input"
+        placeholder="Vaše jméno (např. Jan Novák)..."
+        aria-label="Vaše jméno"
+      >
+      <button type="submit" class="btn btn-primary">Zobrazit →</button>
+    </form>
+    <p class="text-muted" id="reservations-count" style="margin-bottom:16px;font-size:0.9rem"></p>
+    <div id="reservations-list">
+      <div class="empty-state">
+        <h3>Zadejte své jméno</h3>
+        <p>Pro zobrazení rezervací zadejte jméno, které jste použili při rezervaci.</p>
+      </div>
+    </div>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>
